@@ -2,88 +2,131 @@
 // ||code by -> Raghav Kaushal (4NI19CS090)  ||
 // ||           Bharath J Nadig (4NI19CS028) ||
 // -------------------------------------------
-#include<bits/stdc++.h>
-using namespace std;
-
-//finding page faults using indexes
-int pageFaults(int pages[], int n, int capacity)
+#include <stdlib.h>
+#include <stdio.h>
+int main(int argc, char const *argv[])
 {
-	// To represent set of current pages. We use
-	// an unordered_set so that we quickly check
-	// if a page is present in set or not
-	unordered_set<int> s;
+    int length;
+    int num_frames;
+    printf("Enter the length of the reference string : ");
+    scanf("%d", &length);
+    printf("Enter the Reference string : ");
+    int reference_str[length];
+    for (int i = 0; i < length; i++)
+        scanf("%d", &reference_str[i]);
+    
+    printf("Enter the Number of Frames : ");
+    scanf("%d", &num_frames);
+    
+    int memory[num_frames];
+    for (int i = 0; i < num_frames; i++)
+        memory[i] = -1;
+    
+    // LRU
+    int fault_count = 0;
 
-	// To store least recently used indexes
-	// of pages.
-	unordered_map<int, int> indexes;
+    printf("\n\n The Page Replacement Process Is : \n");
+    for (int i = 0; i < length; i++)
+    {
+        // Get Current Requested Page
+        int cur_page = reference_str[i];
+        int page_found = 0;
 
-	// Start from initial page
-	int page_faults = 0;
-	for (int i=0; i<n; i++)
-	{
-		// Check if the set can hold more pages
-		if (s.size() < capacity)
-		{
-			// Insert it into set if not present
-			// already which represents page fault
-			if (s.find(pages[i])==s.end())
-			{
-				s.insert(pages[i]);
+        // Look for page in memory
+        for(int j = 0; j < num_frames; j++)
+        {
+            if(memory[j] == cur_page)
+            {
+                page_found = 1;
+                break;
+            }
+        }
+        // If page is not found
+        if(!page_found)
+        {
+            // Increase Fault Count
+            fault_count++;
 
-				// increment page fault
-				page_faults++;
-			}
+            // Cached status : to check for any empty slot
+            int is_cached = 0;
 
-			// Store the recently used index of
-			// each page
-			indexes[pages[i]] = i;
-		}
+            // <-----------Cache the page --------------->
+            for(int j = 0; j < num_frames; j++)
+            {
+                if(memory[j] == -1)
+                {
+                    memory[j] = cur_page;
+                    break;
+                }
+            }
 
-		// If the set is full then need to perform lru
-		// i.e. remove the least recently used page
-		// and insert the current page
-		else
-		{
-			// Check if current page is not already
-			// present in the set
-			if (s.find(pages[i]) == s.end())
-			{
-				// Find the least recently used pages
-				// that is present in the set
-				int lru = INT_MAX, val;
-				for (auto it=s.begin(); it!=s.end(); it++)
-				{
-					if (indexes[*it] < lru)
-					{
-						lru = indexes[*it];
-						val = *it;
-					}
-				}
+            // If no empty slot is found then remove the LRU page
+            if(!is_cached)
+            {
+                int check_count = 0;
+                int check_status[num_frames];
+                for(int m = 0; m < num_frames; m++)
+                {
+                    check_status[m] = 0;
+                }
 
-				// Remove the indexes page
-				s.erase(val);
+                for(int cur = i-1; cur >= 0; cur--)
+                {
+                    int val = reference_str[cur];
 
-				// insert the current page
-				s.insert(pages[i]);
+                    for(int n= 0; n < num_frames; n++)
+                    {
+                        if(val == memory[n])
+                        {
+                            check_status[n] = 1;
+                            check_count++;
+                            break;
+                        }
+                    }
 
-				// Increment page faults
-				page_faults++;
-			}
+                    if(check_count == num_frames-1)
+                        break;
+                }
 
-			// Update the current page index
-			indexes[pages[i]] = i;
-		}
-	}
 
-	return page_faults;
-}
+                // Put the page where check status = 0
+                for(int cur = 0; cur < num_frames; cur++)
+                {
+                    if(check_status[cur] == 0)
+                    {
+                        memory[cur] = cur_page;
+                        break;
+                    }
+                }
+            }
 
-int main()
-{
-	int pages[] = {7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2};
-	int n = sizeof(pages)/sizeof(pages[0]);
-	int capacity = 4;
-    cout<<endl;
-	cout <<"Number of Page Faults are -> "<<pageFaults(pages, n, capacity)<<endl;
-	return 0;
+            // Print the current Memory snap
+            for(int j = 0; j < num_frames; j++)
+            {
+                printf("%d\t", memory[j]);
+            }
+            printf("\tPage Fault Num : %d\n", fault_count);
+
+        }
+
+        // When page is present in Cache
+        else
+        {
+            // Print the current Memory snap
+            for(int j = 0; j < num_frames; j++)
+            {
+                printf("%d\t", memory[j]);
+            }
+            printf("\n");
+            
+        }
+
+    }
+
+    printf("\n * Total Page Faults : %d\n", fault_count);
+    printf(" * Miss Ration : %d/%d = %.3f\n", fault_count, length, (float(fault_count)/float(length)));
+    printf(" * Hit Ration : %d/%d = %.3f\n", (length - fault_count), length, (float(length-fault_count)/float(length)));
+    /* printf("\n * Hit Ration : %d/%d = %d\n", fault_count); */
+
+    return 0;
 }
